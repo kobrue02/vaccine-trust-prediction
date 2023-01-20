@@ -29,7 +29,7 @@ def process(sent):
     return [sent, lemmata, tags, label]
 
 
-data = [process(tex) for tex in df["text"].tolist()]
+data = [process(tex) for tex in df["text"].tolist() if len(tex.split()) > 1]
 
 dataset = pd.DataFrame(data, columns=["text", "lemmata", "tags", "label"])
 
