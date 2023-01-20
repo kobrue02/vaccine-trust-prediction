@@ -14,7 +14,7 @@ nlp = spacy.load("en_core_web_sm")
 
 
 pd.set_option('display.max_columns', None)
-df = pd.read_csv("train.csv")
+df = pd.read_csv("data/train.csv")
 
 
 def process(sent):
