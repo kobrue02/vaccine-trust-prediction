@@ -9,10 +9,7 @@ def create_corpus(data):
     corp = []
     labels = list(set(df["label"]))
     for label in labels:
-        doc_as_str = ""
-        for line in data.loc[df['label'] == label]["text"]:
-            doc_as_str += line
-        corp.append(doc_as_str)
+        corp.append(" ".join(data.loc[df["label"] == label]["text"]))
     return corp
 
 
