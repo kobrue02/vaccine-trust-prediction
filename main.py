@@ -11,6 +11,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 
 from sentiment_analysis import return_polarity_score
+from ngrams import *
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -19,40 +20,57 @@ pd.set_option('display.max_columns', None)
 df = pd.read_csv("data/train.csv")
 
 
-def process(sent):
+def process(sent: str):
     # Make word frequency list
     # Sentiment Score
     # n-grams
     # troll extraction (eg 1 word)
     doc = nlp(sent)
     lemmata = str(" ".join([t.lemma_ for t in doc]))
-    tags = str(" ".join([t.tag_ for t in doc]))
     label = int(df.loc[df['text'] == sent]["label"])
     sentiment = return_polarity_score(sent)
-    return [sent, lemmata, tags, label, sentiment]
+    bigrams = " ".join(n_gram(sent, 3))
+    return [sent.lower(), lemmata, sentiment, bigrams, label]
 
 
 data = [process(tex) for tex in df["text"].tolist() if len(tex.split()) > 1]
 
-dataset = pd.DataFrame(data, columns=["text", "lemmata", "tags", "label", "sentiment"])
+dataset = pd.DataFrame(data, columns=["text", "lemmata", "sentiment", "bigrams", "label"])
 
-# Ablation Study
-# Hyperpamarameter tuning 
-# (Voting Classifier) 
-model = MLPClassifier(max_iter=100)
+def train_model():
+    # Ablation Study
+    # Hyperpamarameter tuning 
+    # (Voting Classifier) 
+    model = MLPClassifier(max_iter=100)
 
-X, y = dataset["lemmata"], dataset["label"]
+    X, y = dataset["bigrams"], dataset["label"]
 
-vectorizer = CountVectorizer(max_features=1500, min_df=0.001, max_df=0.9)
-tfidfconverter = TfidfTransformer()
+    print(X.shape, y.shape)
 
-X = vectorizer.fit_transform(X).toarray()
-X = tfidfconverter.fit_transform(X).toarray()
+    vectorizer = CountVectorizer(max_features=1500, min_df=0.001, max_df=0.9)
+    tfidfconverter = TfidfTransformer()
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.9, stratify=y, random_state=1)
+    X = vectorizer.fit_transform(X).toarray()
+    X = tfidfconverter.fit_transform(X).toarray()
 
-model.fit(X_train, y_train)
+    print(X.shape)
 
-predicted = model.predict(X_test)
-print(classification_report(y_test, predicted))
+    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.9, stratify=y, random_state=1)
+
+    model.fit(X_train, y_train)
+
+    predicted = model.predict(X_test)
+    print(classification_report(y_test, predicted))
+
+
+
+if __name__ == "__main__":
+
+    print(dataset.head())
+    train_model()
+
+    #for i in range(0,4):
+    #    raw_text = dataset[dataset["label"] == i]["text"].tolist()
+    #    bigrams = most_common_ngrams(raw_text, 4)
+    #    print(bigrams)
 
