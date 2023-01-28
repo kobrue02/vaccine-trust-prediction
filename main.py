@@ -11,12 +11,15 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 
 from sentiment_analysis import return_polarity_score
+from lexical_features import return_keywords, count_kws
 
 nlp = spacy.load("en_core_web_sm")
 
 
 pd.set_option('display.max_columns', None)
 df = pd.read_csv("data/train.csv")
+# Create dict with labels as keys and lists of top keywords as values
+keywords = return_keywords(df)
 
 
 def process(sent):
@@ -26,19 +29,25 @@ def process(sent):
     # troll extraction (eg 1 word)
     doc = nlp(sent)
     lemmata = str(" ".join([t.lemma_ for t in doc]))
-    tags = str(" ".join([t.tag_ for t in doc]))
     label = int(df.loc[df['text'] == sent]["label"])
     sentiment = return_polarity_score(sent)
-    return [sent, lemmata, tags, label, sentiment]
+    kw_counts = count_kws(sent, keywords)
+    result = [sent, lemmata, label, sentiment]
+    result.extend(kw_counts)
+    return result
 
 
 data = [process(tex) for tex in df["text"].tolist() if len(tex.split()) > 1]
 
-dataset = pd.DataFrame(data, columns=["text", "lemmata", "tags", "label", "sentiment"])
+dataset = pd.DataFrame(data, columns=["text", "lemmata", "label", "sentiment",
+                                      "kw matches for label 0",
+                                      "kw matches for label 1",
+                                      "kw matches for label 2",
+                                      "kw matches for label 3"])
 
 # Ablation Study
 # Hyperpamarameter tuning 
-# (Voting Classifier) 
+# (Voting Classifier)
 model = MLPClassifier(max_iter=100)
 
 X, y = dataset["lemmata"], dataset["label"]
