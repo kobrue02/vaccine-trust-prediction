@@ -10,6 +10,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 
+from sentiment_analysis import return_polarity_score
+
 nlp = spacy.load("en_core_web_sm")
 
 
@@ -26,12 +28,13 @@ def process(sent):
     lemmata = str(" ".join([t.lemma_ for t in doc]))
     tags = str(" ".join([t.tag_ for t in doc]))
     label = int(df.loc[df['text'] == sent]["label"])
-    return [sent, lemmata, tags, label]
+    sentiment = return_polarity_score(sent)
+    return [sent, lemmata, tags, label, sentiment]
 
 
 data = [process(tex) for tex in df["text"].tolist() if len(tex.split()) > 1]
 
-dataset = pd.DataFrame(data, columns=["text", "lemmata", "tags", "label"])
+dataset = pd.DataFrame(data, columns=["text", "lemmata", "tags", "label", "sentiment"])
 
 # Ablation Study
 # Hyperpamarameter tuning 
