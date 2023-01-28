@@ -1,5 +1,13 @@
 import pandas as pd
+import spacy
+from re import match
 from sklearn.feature_extraction.text import TfidfVectorizer
+
+nlp = spacy.load("en_core_web_sm")
+
+
+def in_blacklist(w):
+    return bool(match(r"(.)*(\d)+|covid(.)*|vaccin(\w)*", w.lower()))
 
 
 def create_corpus(data):
@@ -9,7 +17,12 @@ def create_corpus(data):
     corp = []
     labels = list(set(df["label"]))
     for label in labels:
-        corp.append(" ".join(data.loc[df["label"] == label]["text"]))
+        doc = ""
+        for sent in data.loc[df["label"] == label]["text"]:
+            tokens = nlp(sent)
+            doc += " " + " ".join([t.lemma_ for t in tokens
+                                   if not in_blacklist(t.lemma_)])
+        corp.append(doc)
     return corp
 
 
@@ -63,7 +76,8 @@ if __name__ == '__main__':
     # Get sorted indexes
     sorted_indexes = get_sorted_indexes(tfidf_matrix)
     # Get sorted features
-    top_features = get_top_n_features(features, sorted_indexes, 150)
+    top_features = get_top_n_features(features, sorted_indexes, 50)
+    print(top_features)
     # Count keywords
     kw_counts = [count_kws(sent, top_features) for sent in df["text"]]
     print(kw_counts)
