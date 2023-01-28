@@ -53,6 +53,9 @@ def get_top_n_kws(feat_list, sorted_idxs, n):
 
 
 def return_keywords(df):
+    """
+    Takes dataframe and proceeeds through all
+    steps of keyword extraction """
     # Create corpus
     corpus = create_corpus(df)
     # Extract TF IDF
