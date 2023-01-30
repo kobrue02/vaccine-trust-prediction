@@ -20,7 +20,7 @@ def most_common_ngrams(corpus: list, n):
             bigram_frequency[bigram] = 1
         else:
             bigram_frequency[bigram] += 1
-    top_keys = sorted(bigram_frequency, key=bigram_frequency.get, reverse=True)[:5]
+    top_keys = sorted(bigram_frequency, key=bigram_frequency.get, reverse=True)[:10]
     return top_keys
 
 def flatten(l):

@@ -11,6 +11,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 
 from sentiment_analysis import return_polarity_score
+from lexical_features import return_keywords, count_kws
 from ngrams import *
 
 nlp = spacy.load("en_core_web_sm")
@@ -18,6 +19,8 @@ nlp = spacy.load("en_core_web_sm")
 
 pd.set_option('display.max_columns', None)
 df = pd.read_csv("data/train.csv")
+# Create dict with labels as keys and lists of top keywords as values
+keywords = return_keywords(df)
 
 
 def process(sent: str):
@@ -30,12 +33,18 @@ def process(sent: str):
     label = int(df.loc[df['text'] == sent]["label"])
     sentiment = return_polarity_score(sent)
     bigrams = " ".join(n_gram(sent, 3))
-    return [sent.lower(), lemmata, sentiment, bigrams, label]
-
+    kw_counts = count_kws(sent, keywords)
+    result = [sent.lower(), lemmata, label, sentiment, bigrams]
+    result.extend(kw_counts)
+    return result
 
 data = [process(tex) for tex in df["text"].tolist() if len(tex.split()) > 1]
 
-dataset = pd.DataFrame(data, columns=["text", "lemmata", "sentiment", "bigrams", "label"])
+dataset = pd.DataFrame(data, columns=["text", "lemmata", "label", "sentiment", "bigrams",
+                                      "kw matches for label 0",
+                                      "kw matches for label 1",
+                                      "kw matches for label 2",
+                                      "kw matches for label 3"])
 
 def train_model():
     # Ablation Study
