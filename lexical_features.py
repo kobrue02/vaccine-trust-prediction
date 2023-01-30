@@ -1,7 +1,7 @@
 import pandas as pd
 import spacy
 from re import match
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -41,7 +41,7 @@ def get_sorted_indexes(df, matrix):
     return sorted_tfidf
 
 
-def get_top_n_kws(feat_list, sorted_idxs, n):
+def get_top_n_features(feat_list, sorted_idxs, n):
     """
     Create dict with labels as keys and
     lists of features sorted by tfidf as values"""
@@ -52,30 +52,36 @@ def get_top_n_kws(feat_list, sorted_idxs, n):
     return top_features_dict
 
 
-def return_keywords(df):
+def return_features(df, ngrams=False):
     """
     Takes dataframe and proceeeds through all
     steps of keyword extraction """
     # Create corpus
     corpus = create_corpus(df)
-    # Extract TF IDF
-    vectorizer = TfidfVectorizer(stop_words='english')
-    tfidf_matrix = vectorizer.fit_transform(corpus)
+    # Use ngrams
+    if ngrams:
+        vectorizer = CountVectorizer(ngram_range=(3, 3), stop_words='english')
+    # Use words
+    else:
+        vectorizer = CountVectorizer(stop_words='english')
+    transformer = TfidfTransformer()
+    count_matrix = vectorizer.fit_transform(corpus)
+    tfidf_matrix = transformer.fit_transform(count_matrix)
     features = vectorizer.get_feature_names_out()
     # Get sorted features
     sorted_indexes = get_sorted_indexes(df, tfidf_matrix)
-    top_kws = get_top_n_kws(features, sorted_indexes, 30)
-    return top_kws
+    top_features = get_top_n_features(features, sorted_indexes, 30)
+    return top_features
 
 
-def count_kws(sent, top_features_dict):
+def count_features(sent, top_features_dict):
     """
     Count occurence of keywords in sents for each label"""
     counts = []
-    for kws in top_features_dict.values():
+    for features in top_features_dict.values():
         c = 0
-        for kw in kws:
-            c += 1 if kw in sent else 0
+        for ft in features:
+            c += 1 if ft in sent else 0
         counts.append(c)
     return counts
 
@@ -84,5 +90,5 @@ if __name__ == '__main__':
     # Read CSV
     my_df = pd.read_csv("data/train.csv")
     # Extract keywords
-    keywords = return_keywords(my_df)
-    print(keywords)
+    ngrams = return_features(my_df, ngrams=True)
+    print(ngrams)

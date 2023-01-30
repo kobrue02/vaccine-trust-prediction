@@ -11,7 +11,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 
 from sentiment_analysis import return_polarity_score
-from lexical_features import return_keywords, count_kws
+from lexical_features import return_features, count_features
 from ngrams import *
 
 nlp = spacy.load("en_core_web_sm")
@@ -20,7 +20,8 @@ nlp = spacy.load("en_core_web_sm")
 pd.set_option('display.max_columns', None)
 df = pd.read_csv("data/train.csv")
 # Create dict with labels as keys and lists of top keywords as values
-keywords = return_keywords(df)
+top_keywords = return_features(df)
+top_ngrams = return_features(df, ngrams=True)
 
 
 def process(sent: str):
@@ -33,10 +34,13 @@ def process(sent: str):
     label = int(df.loc[df['text'] == sent]["label"])
     sentiment = return_polarity_score(sent)
     bigrams = " ".join(n_gram(sent, 3))
-    kw_counts = count_kws(sent, keywords)
+    kw_counts = count_features(sent, top_keywords)
+    ngram_counts = count_features(sent, top_ngrams)
     result = [sent.lower(), lemmata, label, sentiment, bigrams]
     result.extend(kw_counts)
+    result.extend(ngram_counts)
     return result
+
 
 data = [process(tex) for tex in df["text"].tolist() if len(tex.split()) > 1]
 
@@ -44,7 +48,12 @@ dataset = pd.DataFrame(data, columns=["text", "lemmata", "label", "sentiment", "
                                       "kw matches for label 0",
                                       "kw matches for label 1",
                                       "kw matches for label 2",
-                                      "kw matches for label 3"])
+                                      "kw matches for label 3",
+                                      "ngram matches for label 0",
+                                      "ngram matches for label 1",
+                                      "ngram matches for label 2",
+                                      "ngram matches for label 3"])
+
 
 def train_model():
     # Ablation Study
@@ -53,7 +62,6 @@ def train_model():
     model = MLPClassifier(max_iter=100)
 
     X, y = dataset["bigrams"], dataset["label"]
-
     print(X.shape, y.shape)
 
     vectorizer = CountVectorizer(max_features=1500, min_df=0.001, max_df=0.9)
@@ -61,7 +69,6 @@ def train_model():
 
     X = vectorizer.fit_transform(X).toarray()
     X = tfidfconverter.fit_transform(X).toarray()
-
     print(X.shape)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.9, stratify=y, random_state=1)
@@ -76,7 +83,7 @@ def train_model():
 if __name__ == "__main__":
 
     print(dataset.head())
-    train_model()
+    # train_model()
 
     #for i in range(0,4):
     #    raw_text = dataset[dataset["label"] == i]["text"].tolist()
