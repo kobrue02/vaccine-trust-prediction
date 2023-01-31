@@ -55,11 +55,10 @@ dataset = pd.DataFrame(data, columns=["text", "lemmata", "label", "sentiment", "
                                       "ngram matches for label 3"])
 
 
-def train_model():
+def train_model(model):
     # Ablation Study
     # Hyperpamarameter tuning 
     # (Voting Classifier) 
-    model = MLPClassifier(max_iter=100)
 
     X, y = dataset["bigrams"], dataset["label"]
     print(X.shape, y.shape)
@@ -83,10 +82,6 @@ def train_model():
 if __name__ == "__main__":
 
     print(dataset.head())
-    # train_model()
-
-    #for i in range(0,4):
-    #    raw_text = dataset[dataset["label"] == i]["text"].tolist()
-    #    bigrams = most_common_ngrams(raw_text, 4)
-    #    print(bigrams)
+    for model in [MLPClassifier(max_iter=100), BernoulliNB(), GaussianNB()]
+        train_model(model)
 
