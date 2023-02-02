@@ -10,7 +10,7 @@ def in_blacklist(w):
     return bool(match(r"(.)*(\d)+|covid(.)*|vaccin(\w)*", w.lower()))
 
 
-def create_corpus(df):
+def create_corpus(df, filter):
     """
     Combines all sents of one label to one document and
     creates a corpus out of all document strings"""
@@ -20,8 +20,11 @@ def create_corpus(df):
         doc = ""
         for sent in df.loc[df["label"] == label]["text"]:
             tokens = nlp(sent)
-            doc += " " + " ".join([t.lemma_ for t in tokens
-                                   if not in_blacklist(t.lemma_)])
+            if filter:
+                doc += " " + " ".join([t.lemma_ for t in tokens
+                                       if not in_blacklist(t.lemma_)])
+            else:
+                doc += " " + " ".join([t.lemma_ for t in tokens])
         corp.append(doc)
     return corp
 
@@ -52,12 +55,12 @@ def get_top_n_features(feat_list, sorted_idxs, n):
     return top_features_dict
 
 
-def return_features(df, ngrams=False):
+def return_features(df, n, filter=True, ngrams=False):
     """
     Takes dataframe and proceeeds through all
     steps of keyword extraction """
     # Create corpus
-    corpus = create_corpus(df)
+    corpus = create_corpus(df, filter)
     # Use ngrams
     if ngrams:
         vectorizer = CountVectorizer(ngram_range=(3, 3), stop_words='english')
@@ -70,7 +73,10 @@ def return_features(df, ngrams=False):
     features = vectorizer.get_feature_names_out()
     # Get sorted features
     sorted_indexes = get_sorted_indexes(df, tfidf_matrix)
-    top_features = get_top_n_features(features, sorted_indexes, 30)
+    top_features = get_top_n_features(features, sorted_indexes, n)
+    #sorted_indexes = get_sorted_indexes(df, count_matrix)
+    #top_features = get_top_n_features(features, sorted_indexes, n)
+
     return top_features
 
 
@@ -90,5 +96,8 @@ if __name__ == '__main__':
     # Read CSV
     my_df = pd.read_csv("data/train.csv")
     # Extract keywords
-    ngrams = return_features(my_df, ngrams=True)
+    #keywords = return_features(my_df, 20)
+    #print(keywords)
+    # Extract ngrams
+    ngrams = return_features(my_df, 20, ngrams=True)
     print(ngrams)
