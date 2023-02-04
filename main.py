@@ -63,6 +63,9 @@ dataset = pd.DataFrame(data, columns=["text", "lemmata", "label", "sentiment", "
                                       "ngram matches for label 2",
                                       "ngram matches for label 3"])
 
+dataset.label = dataset.label.replace(1, 2)
+dataset.label = dataset.label.replace(3, 2)
+
 tfidf_matrix = create_tfidf_matrix()
 new_dataset = pd.concat([dataset, tfidf_matrix], axis=1)
 
