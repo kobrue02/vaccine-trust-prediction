@@ -17,8 +17,39 @@ raw_df = raw_df[raw_df["text"].apply(lambda x: len(x.split()) > 1)]
 # Retrieve most meaningful keywords and ngrams
 label2keywords = return_features(raw_df, 20)
 label2ngrams = return_features(raw_df, 20, ngrams=True)
-# print(label2keywords)
-# print(label2ngrams)
+
+def pipeline(file_name: str, type: str):
+
+    assert type in ["text", "ngrams"]
+
+    raw_df = pd.read_csv(f"data/{file_name}")
+    raw_df = raw_df[raw_df["text"].apply(lambda x: len(x.split()) > 1)]
+
+    features = [extract_features(sent) for sent in raw_df["text"]]
+
+    df = pd.DataFrame(features, columns=[
+    "sentiment",
+    "kw matches for label 0",
+    "kw matches for label 1",
+    "kw matches for label 2",
+    "kw matches for label 3",
+    "ngram matches for label 0",
+    "ngram matches for label 1",
+    "ngram matches for label 2",
+    "ngram matches for label 3"
+    ])
+
+    df["label"] = raw_df["label"].tolist()
+
+    if type == "text":
+        # Create dataframe based on own features and tf idf on text
+        df1 = pd.concat([df, create_tfidf_df(raw_df)], axis=1)
+        return df1
+    
+    if type == "ngrams":
+        # Create dataframe based on own features and tf idf on ngrams
+        df2 = pd.concat([df, create_tfidf_df(raw_df, ngrams=True)], axis=1)
+        return df2
 
 
 def preprocess(sent):
@@ -52,26 +83,3 @@ def extract_features(sent):
     feat_list.extend(kw_matches)
     feat_list.extend(ngram_matches)
     return feat_list
-
-
-# Extract own features and create dataframe
-features = [extract_features(sent) for sent in raw_df["text"]]
-df = pd.DataFrame(features, columns=[
-    "sentiment",
-    "kw matches for label 0",
-    "kw matches for label 1",
-    "kw matches for label 2",
-    "kw matches for label 3",
-    "ngram matches for label 0",
-    "ngram matches for label 1",
-    "ngram matches for label 2",
-    "ngram matches for label 3"
-])
-df["label"] = raw_df["label"].tolist()
-print(df.shape)
-# Create dataframe based on own features and tf idf on text
-df1 = pd.concat([df, create_tfidf_df(raw_df)], axis=1)
-# Create dataframe based on own features and tf idf on ngrams
-df2 = pd.concat([df, create_tfidf_df(raw_df, ngrams=True)], axis=1)
-print(df1.shape)
-print(df2.shape)
