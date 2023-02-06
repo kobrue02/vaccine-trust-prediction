@@ -20,8 +20,9 @@ def create_corpus(data):
         doc = ""
         for sent in data.loc[data["label"] == label]["text"]:
             tokens = nlp(sent)
-            doc += " " + " ".join([t.lemma_ for t in tokens
-                                   if not in_blacklist(t.lemma_)])
+            doc += " " + " ".join(
+                [t.lemma_ for t in tokens if not in_blacklist(t.lemma_)]
+            )
 
         corp.append(doc)
         index2label[i] = label
@@ -71,7 +72,8 @@ def return_features(df, n, ngrams=False):
     # Get sorted features
     sorted_indexes = get_sorted_indexes(tfidf_matrix)
     top_features = get_top_n_features(features, sorted_indexes, n)
-    label2features = {label: top_features[i] for i, label in index2label.items()}
+    label2features = {label: top_features[i]
+                      for i, label in index2label.items()}
     return label2features
 
 

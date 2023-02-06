@@ -1,8 +1,9 @@
 from sklearn.neural_network import MLPClassifier
-from sklearn.naive_bayes import BernoulliNB, GaussianNB
-from sklearn.metrics import classification_report
-from sklearn.svm import SVC, LinearSVC
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.svm import LinearSVC
 from sklearn.dummy import DummyClassifier
+from sklearn.metrics import classification_report
+
 
 from process import pipeline
 
@@ -41,11 +42,11 @@ def train_model(model, df_train, df_test, features=None, drop=False):
 
 
 if __name__ == '__main__':
-    df1_train, vectorizer, transformer = pipeline("train.csv")
-    df1_test = pipeline("test.csv", (vectorizer, transformer))
+    df1_train = pipeline("train.csv")
+    df1_test = pipeline("test.csv")
 
-    df2_train, vectorizer, transformer = pipeline("train.csv", ngrams=True)
-    df2_test = pipeline("test.csv", (vectorizer, transformer), ngrams=True)
+    df2_train = pipeline("train.csv", ngrams=True)
+    df2_test = pipeline("test.csv", ngrams=True)
 
     train_baseline(df1_train)
 
@@ -67,14 +68,13 @@ if __name__ == '__main__':
     models = {
         "MLP": MLPClassifier(max_iter=100, random_state=SEED),
         "Bernoulli NB": BernoulliNB(),
-        # "Gaussian NB": GaussianNB(),
         "Linear SVC": LinearSVC(random_state=SEED),
-        # "SVC": SVC(random_state=SEED)
     }
     for name, model in models.items():
         print("\n" + name + ":")
+
         print("\nOnly sentiment:")
-        train_model(model, df1_train, df1_test, ["sentiment"])
+        train_model(model, df1_train, df1_test, sentiment)
 
         print("\nOnly kw matches:")
         train_model(model, df1_train, df1_test, kw_matches)
