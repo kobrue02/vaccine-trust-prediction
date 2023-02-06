@@ -36,6 +36,12 @@ def create_data(df, features, drop):
     
     return X_train, X_test, y_train, y_test
 
+def train_baseline(df):
+    X, y = create_data(df)
+    dummy_clf = DummyClassifier(strategy="most_frequent")
+    dummy_clf.fit(X, y)
+    print(f"Acc of dummy baseline: {dummy_clf.score(X, y)}")
+
 def train_model(model, df, features=None, drop=False):
     # Create training/test split and choose features to train model with
     X_train, X_test, y_train, y_test = create_data(df, features, drop)
@@ -48,18 +54,22 @@ def train_model(model, df, features=None, drop=False):
 
 
 if __name__ == '__main__':
+    train_baseline(df1)
     SEED = 10
-    own_features = [
-        "sentiment",
+    sentiment = ["sentiment"]
+    kw_matches = [
         "kw matches for label 0",
         "kw matches for label 1",
         "kw matches for label 2",
-        "kw matches for label 3",
+        "kw matches for label 3"
+    ]
+    ngram_matches = [
         "ngram matches for label 0",
         "ngram matches for label 1",
         "ngram matches for label 2",
         "ngram matches for label 3"
     ]
+    own_features = sentiment + kw_matches + ngram_matches
     models = {
         "MLP": MLPClassifier(max_iter=100, random_state=SEED),
         "Bernoulli NB": BernoulliNB(),
@@ -67,29 +77,16 @@ if __name__ == '__main__':
         "Linear SVC": LinearSVC(random_state=SEED),
         # "SVC": SVC(random_state=SEED)
     }
-
-    df1 = pipeline("train.csv", "text")
-    df2 = pipeline("train.csv", "ngrams")
-
-
     for name, model in models.items():
         print("\n" + name + ":")
         print("\nOnly sentiment:")
         train_model(model, df1, ["sentiment"])
 
         print("\nOnly kw matches:")
-        train_model(model, df1, [
-            "kw matches for label 0",
-            "kw matches for label 1",
-            "kw matches for label 2",
-            "kw matches for label 3"])
+        train_model(model, df1, kw_matches)
 
         print("\nOnly ngram matches:")
-        train_model(model, df1, [
-            "ngram matches for label 0",
-            "ngram matches for label 1",
-            "ngram matches for label 2",
-            "ngram matches for label 3"])
+        train_model(model, df1, ngram_matches)
 
         print("\nAll own features:")
         train_model(model, df1, own_features)
