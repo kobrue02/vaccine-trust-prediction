@@ -18,38 +18,33 @@ raw_df = raw_df[raw_df["text"].apply(lambda x: len(x.split()) > 1)]
 label2keywords = return_features(raw_df, 20)
 label2ngrams = return_features(raw_df, 20, ngrams=True)
 
-def pipeline(file_name: str, type: str):
 
-    assert type in ["text", "ngrams"]
-
+def pipeline(file_name: str, fitted=None, ngrams=False):
     raw_df = pd.read_csv(f"data/{file_name}")
     raw_df = raw_df[raw_df["text"].apply(lambda x: len(x.split()) > 1)]
 
     features = [extract_features(sent) for sent in raw_df["text"]]
 
     df = pd.DataFrame(features, columns=[
-    "sentiment",
-    "kw matches for label 0",
-    "kw matches for label 1",
-    "kw matches for label 2",
-    "kw matches for label 3",
-    "ngram matches for label 0",
-    "ngram matches for label 1",
-    "ngram matches for label 2",
-    "ngram matches for label 3"
+        "sentiment",
+        "kw matches for label 0",
+        "kw matches for label 1",
+        "kw matches for label 2",
+        "kw matches for label 3",
+        "ngram matches for label 0",
+        "ngram matches for label 1",
+        "ngram matches for label 2",
+        "ngram matches for label 3"
     ])
 
     df["label"] = raw_df["label"].tolist()
 
-    if type == "text":
-        # Create dataframe based on own features and tf idf on text
-        df1 = pd.concat([df, create_tfidf_df(raw_df)], axis=1)
-        return df1
-    
-    if type == "ngrams":
-        # Create dataframe based on own features and tf idf on ngrams
-        df2 = pd.concat([df, create_tfidf_df(raw_df, ngrams=True)], axis=1)
-        return df2
+    if not fitted:
+        tfidf_df, vectorizer, transformer = create_tfidf_df(raw_df, fitted, ngrams)
+        return pd.concat([df, tfidf_df], axis=1), vectorizer, transformer
+    else:
+        tfidf_df = create_tfidf_df(raw_df, fitted, ngrams)
+        return pd.concat([df, tfidf_df], axis=1)
 
 
 def preprocess(sent):
@@ -58,16 +53,30 @@ def preprocess(sent):
     return lemmata
 
 
-def create_tfidf_df(data, ngrams=False):
-    if ngrams:
-        vectorizer = CountVectorizer(ngram_range=(3, 3), stop_words='english')
+def create_tfidf_df(data, fitted=None, ngrams=False):
+    # Create new vectorizer and transformer for training data
+    if not fitted:
+        if ngrams:
+            vectorizer = CountVectorizer(ngram_range=(3, 3),
+                                         stop_words='english')
+        else:
+            vectorizer = CountVectorizer(stop_words='english')
+        transformer = TfidfTransformer()
+
+        counts = vectorizer.fit_transform(data["text"].tolist())
+        tfidf = transformer.fit_transform(counts)
+
+        tfidf_df = pd.DataFrame.sparse.from_spmatrix(tfidf)
+        return tfidf_df, vectorizer, transformer
+    # Use previously fitted vectorizer and transformer on test data
     else:
-        vectorizer = CountVectorizer(stop_words='english')
-    transformer = TfidfTransformer()
-    count_matrix = vectorizer.fit_transform(data["text"].tolist())
-    tfidf_matrix = transformer.fit_transform(count_matrix)
-    tfidf_df = pd.DataFrame.sparse.from_spmatrix(tfidf_matrix)
-    return tfidf_df
+        vectorizer, transformer = fitted
+
+        counts = vectorizer.transform(data["text"].tolist())
+        tfidf = transformer.transform(counts)
+
+        tfidf_df = pd.DataFrame.sparse.from_spmatrix(tfidf)
+        return tfidf_df
 
 
 def extract_features(sent):

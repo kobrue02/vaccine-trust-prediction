@@ -1,40 +1,25 @@
 from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import BernoulliNB, GaussianNB
 from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC, LinearSVC
+from sklearn.dummy import DummyClassifier
 
 from process import pipeline
 
-def create_data(df, features, drop):
 
-    test_set = pipeline("test.csv", "text")
-
-    if features:
-        # Drop specified features
+def create_data(df, features=None, drop=False):
+    if features:  # Drop specified features
         if drop:
             features.append("label")
-            X_train = df.drop(features, axis=1)
-            X_test = test_set.drop(features, axis=1)
-        # Use specified features
-        else:
-            X_train = df[features]
-            X_test = test_set[features]
+            X = df.drop(features, axis=1)
+        else:  # Use specified features
+            X = df[features]
+    else:  # Use all features
+        X = df.drop("label", axis=1)
+    X.columns = X.columns.astype(str)
+    y = df["label"]
+    return X, y
 
-    # Use all features
-    else:
-        X_train = df.drop("label", axis=1)
-        X_test = test_set.drop("label", axis=1)
-
-    X_train.columns = X_train.columns.astype(str)
-    X_test.columns = X_test.columns.astype(str)
-
-    y_train = df["label"]
-    y_test = test_set["label"]
-
-    # Create training and test sets
-    
-    return X_train, X_test, y_train, y_test
 
 def train_baseline(df):
     X, y = create_data(df)
@@ -42,9 +27,11 @@ def train_baseline(df):
     dummy_clf.fit(X, y)
     print(f"Acc of dummy baseline: {dummy_clf.score(X, y)}")
 
-def train_model(model, df, features=None, drop=False):
-    # Create training/test split and choose features to train model with
-    X_train, X_test, y_train, y_test = create_data(df, features, drop)
+
+def train_model(model, df_train, df_test, features=None, drop=False):
+    # Create training & test data and choose features to train model with
+    X_train, y_train = create_data(df_train, features, drop)
+    X_test, y_test = create_data(df_test, features, drop)
     # Train model
     model.fit(X_train, y_train)
     # Make predictions
@@ -54,7 +41,14 @@ def train_model(model, df, features=None, drop=False):
 
 
 if __name__ == '__main__':
-    train_baseline(df1)
+    df1_train, vectorizer, transformer = pipeline("train.csv")
+    df1_test = pipeline("test.csv", (vectorizer, transformer))
+
+    df2_train, vectorizer, transformer = pipeline("train.csv", ngrams=True)
+    df2_test = pipeline("test.csv", (vectorizer, transformer), ngrams=True)
+
+    train_baseline(df1_train)
+
     SEED = 10
     sentiment = ["sentiment"]
     kw_matches = [
@@ -80,25 +74,25 @@ if __name__ == '__main__':
     for name, model in models.items():
         print("\n" + name + ":")
         print("\nOnly sentiment:")
-        train_model(model, df1, ["sentiment"])
+        train_model(model, df1_train, df1_test, ["sentiment"])
 
         print("\nOnly kw matches:")
-        train_model(model, df1, kw_matches)
+        train_model(model, df1_train, df1_test, kw_matches)
 
         print("\nOnly ngram matches:")
-        train_model(model, df1, ngram_matches)
+        train_model(model, df1_train, df1_test, ngram_matches)
 
         print("\nAll own features:")
-        train_model(model, df1, own_features)
+        train_model(model, df1_train, df1_test, own_features)
 
-        #print("\nOnly tf idf on text:")
-        #train_model(model, df1, own_features, drop=True)
+        print("\nOnly tf idf on text:")
+        train_model(model, df1_train, df1_test, own_features, drop=True)
 
-        #print("\ntf idf on text + own features:")
-        #train_model(model, df1)
+        print("\ntf idf on text + own features:")
+        train_model(model, df1_train, df1_test)
 
-        #print("\nOnly tf idf on ngrams:")
-        #train_model(model, df2, own_features, drop=True)
+        print("\nOnly tf idf on ngrams:")
+        train_model(model, df2_train, df2_test, own_features, drop=True)
 
-        #print("\ntf idf on ngrams + own features:")
-        #train_model(model, df2)
+        print("\ntf idf on ngrams + own features:")
+        train_model(model, df2_train, df2_test)
