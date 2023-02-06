@@ -4,27 +4,37 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC, LinearSVC
 
-from process import df1, df2
-
+from process import pipeline
 
 def create_data(df, features, drop):
+
+    test_set = pipeline("test.csv", "text")
+
     if features:
         # Drop specified features
         if drop:
             features.append("label")
-            X = df.drop(features, axis=1)
+            X_train = df.drop(features, axis=1)
+            X_test = test_set.drop(features, axis=1)
         # Use specified features
         else:
-            X = df[features]
+            X_train = df[features]
+            X_test = test_set[features]
+
     # Use all features
     else:
-        X = df.drop("label", axis=1)
-    X.columns = X.columns.astype(str)
-    y = df["label"]
-    # Create training and test sets
-    return train_test_split(
-        X, y, train_size=0.8, stratify=y, random_state=10)
+        X_train = df.drop("label", axis=1)
+        X_test = test_set.drop("label", axis=1)
 
+    X_train.columns = X_train.columns.astype(str)
+    X_test.columns = X_test.columns.astype(str)
+
+    y_train = df["label"]
+    y_test = test_set["label"]
+
+    # Create training and test sets
+    
+    return X_train, X_test, y_train, y_test
 
 def train_model(model, df, features=None, drop=False):
     # Create training/test split and choose features to train model with
@@ -57,6 +67,11 @@ if __name__ == '__main__':
         "Linear SVC": LinearSVC(random_state=SEED),
         # "SVC": SVC(random_state=SEED)
     }
+
+    df1 = pipeline("train.csv", "text")
+    df2 = pipeline("train.csv", "ngrams")
+
+
     for name, model in models.items():
         print("\n" + name + ":")
         print("\nOnly sentiment:")
@@ -79,14 +94,14 @@ if __name__ == '__main__':
         print("\nAll own features:")
         train_model(model, df1, own_features)
 
-        print("\nOnly tf idf on text:")
-        train_model(model, df1, own_features, drop=True)
+        #print("\nOnly tf idf on text:")
+        #train_model(model, df1, own_features, drop=True)
 
-        print("\ntf idf on text + own features:")
-        train_model(model, df1)
+        #print("\ntf idf on text + own features:")
+        #train_model(model, df1)
 
-        print("\nOnly tf idf on ngrams:")
-        train_model(model, df2, own_features, drop=True)
+        #print("\nOnly tf idf on ngrams:")
+        #train_model(model, df2, own_features, drop=True)
 
-        print("\ntf idf on ngrams + own features:")
-        train_model(model, df2)
+        #print("\ntf idf on ngrams + own features:")
+        #train_model(model, df2)
