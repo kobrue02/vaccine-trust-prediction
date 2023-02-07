@@ -1,56 +1,14 @@
 from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import BernoulliNB
 from sklearn.svm import LinearSVC
-from sklearn.dummy import DummyClassifier
-from sklearn.metrics import classification_report
-
 
 from process import pipeline
-
-
-def create_data(df, features=None, drop=False):
-    if features:  # Drop specified features
-        if drop:
-            features.append("label")
-            X = df.drop(features, axis=1)
-        else:  # Use specified features
-            X = df[features]
-    else:  # Use all features
-        X = df.drop("label", axis=1)
-    X.columns = X.columns.astype(str)
-    y = df["label"]
-    return X, y
-
-
-def train_baseline(df):
-    X, y = create_data(df)
-    dummy_clf = DummyClassifier(strategy="most_frequent")
-    dummy_clf.fit(X, y)
-    print(f"Acc of dummy baseline: {dummy_clf.score(X, y)}")
-
-
-def train_model(model, df_train, df_test, features=None, drop=False):
-    # Create training & test data and choose features to train model with
-    X_train, y_train = create_data(df_train, features, drop)
-    X_test, y_test = create_data(df_test, features, drop)
-    # Train model
-    model.fit(X_train, y_train)
-    # Make predictions
-    y_predicted = model.predict(X_test)
-    # Evaluate
-    print(classification_report(y_test, y_predicted, zero_division=0))
+from train import train_baseline, train_model
 
 
 if __name__ == '__main__':
-    df1_train = pipeline("train.csv")
-    df1_test = pipeline("test.csv")
-
-    df2_train = pipeline("train.csv", ngrams=True)
-    df2_test = pipeline("test.csv", ngrams=True)
-
-    train_baseline(df1_train)
-
     SEED = 10
+    # FEATURES TO TEST
     sentiment = ["sentiment"]
     kw_matches = [
         "kw matches for label 0",
@@ -65,14 +23,26 @@ if __name__ == '__main__':
         "ngram matches for label 3"
     ]
     own_features = sentiment + kw_matches + ngram_matches
+
+    # MODELS TO TEST
     models = {
         "MLP": MLPClassifier(max_iter=100, random_state=SEED),
-        "Bernoulli NB": BernoulliNB(),
-        "Linear SVC": LinearSVC(random_state=SEED),
+        "BERNOULLI NB": BernoulliNB(),
+        "LINEAR SVC": LinearSVC(random_state=SEED),
     }
+    # CREATE DATA FOR TRAINING
+    df1_train = pipeline("train.csv")
+    df1_test = pipeline("test.csv")
+
+    df2_train = pipeline("train.csv", ngrams=True)
+    df2_test = pipeline("test.csv", ngrams=True)
+
+    # BASELINE
+    train_baseline(df1_train)
+
+    # TRAIN & EVALUATE DIFFERENT MODELS ON DIFFERENT FEATURES
     for name, model in models.items():
         print("\n" + name + ":")
-
         print("\nOnly sentiment:")
         train_model(model, df1_train, df1_test, sentiment)
 
